@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <assert.h>
 #include "bitmap.h"
 
@@ -19,14 +18,14 @@ void destroyBitMap(Bitmap* BitMap) {
 }
 
 //setta il bit in posizione i, stato 0/1
-void setBit(Bitmap* BitMap, int i, int stato) {
-	if (BitMap == NULL || BitMap->num_bits <= i) return;
-	int byte_num = i >> 3;
+void setBit(Bitmap* bitmap, int index, int state) {
+	if (bitmap == NULL || bitmap->num_bits <= index) return;
+	int byte_num = index >> 3;
 	int bit_in_byte = byte_num&0x03;
-	if (stato) {
-		BitMap->buffer[byte_num] |= (1<<bit_in_byte);
+	if (state) {
+		bitmap->buffer[byte_num] |= (1<<bit_in_byte);
 	} else {
-		BitMap->buffer[byte_num] &= ~(1<<bit_in_byte);
+		bitmap->buffer[byte_num] &= ~(1<<bit_in_byte);
 	}
 }
 
@@ -76,7 +75,15 @@ void BitMap_print(Bitmap* BitMap) {
 	printf("\n");
 }
 
-int main() {
+// verifica lo stato di un bit specifico all'interno di una bitmap
+// restituisce il valore del bit corrispondente all'indice nella bitmap
+int testbit(Bitmap* bitmap, int index) {
+	int byte_index = index / 8;
+	int bit_offset = index % 8;
+	uint8_t byte = bitmap->buffer[byte_index];
+	return (byte >> bit_offset) & 0x1;
+}
+int bitmap_test() {
 	int num_bits = BITMAP_SIZE_IN_BYTES * 8;
 	uint8_t* buffer = (uint8_t*)malloc(BITMAP_SIZE_IN_BYTES);
 	if (buffer == NULL) {
@@ -85,11 +92,10 @@ int main() {
 	}
 	Bitmap* bitmap;
 	createBitMap(bitmap, num_bits, buffer);
-	setBit(bitmap, 500, 1);
+	setBit(bitmap, 500, 0);
 	int bitValue = getBit(bitmap, 500);
 	printf("Bit value at index 500: %d\n", bitValue);
-	BitMap_print(bitmap);
-	int bytes = getBytes(num_bits);
+	BitMap_print(bitmap);	
 	destroyBitMap(bitmap);
 	return 0;
 }

@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c11
-SRC = main.c
+SRC = bitmap.c buddy_allocator.c pseudo_malloc.c
 OBJ = $(SRC:.c=.o)
 TARGET = so_example
 

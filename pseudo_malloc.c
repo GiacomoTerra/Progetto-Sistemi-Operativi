@@ -1,0 +1,59 @@
+#include "pseudo_malloc.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+void* pseudo_malloc(BuddyAllocator* alloc, int size) {
+	if (size > PAGE_SIZE / 4) {
+		//Richiesta superiore a 1/4 della page_size, utilizza mmap
+		int fd = open("/dev/zero", O_RDWR);
+		if (fd == -1) {
+			printf("Errore durante la creazione del file temporaneo\n");
+			return NULL;
+		}
+		void* mem = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+		close(fd);
+		if (mem == MAP_FAILED) {
+			printf("Errore durante l'allocazione della memoria con mmap\n");
+			return NULL;
+		}
+		printf("Memoria allocata con mmap:\n");
+		printf("\tDimensione: %d bytes\n", size);
+		printf("\tIndirizzo: %p\n", mem);
+		return mem;
+	} else {
+		//Richiesta inferiore a 1/4 della page size
+		return BuddyAllocator_malloc(alloc, size);
+	}
+}
+
+void pseudo_free(BuddyAllocator* alloc, void* mem) {
+	if (mem == NULL) {
+		printf("Memoria nulla, impossibile deallocare\n");
+		return;
+	}
+	int min_bucket_size = alloc->min_bucket_size;
+	int index = ((char*)mem - alloc->memory) / min_bucket_size;
+	//Verifica che l'indice sia valido
+	if (index < 0 || index >= (1 << alloc->num_levels)) {
+		printf("Indice non valido, impossibile deallocare\n");
+		return;
+	}
+	if (min_bucket_size > PAGE_SIZE / 4) {
+		//Dimensione superiore a 1/4 della page size, utilizza munmap
+		int result = munmap(mem, min_bucket_size);
+		if (result == -1) {
+			printf("Errore durante la deallocazione della memoria con munmap\n");
+			return;
+		}
+		printf("Memoria deallocata con munmap:\n");
+		printf("\tIndirizzo: %p\n", mem);
+	} else {
+		//Dimensione inferiore a 1/4 della page size
+		BuddyAllocator_free(alloc, mem);
+	}
+}
+

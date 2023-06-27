@@ -1,5 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
+#pragma once
 #include <stdint.h>
 
 #define BITMAP_SIZE_IN_BYTES 1024 * 1024 // 1 MB
@@ -18,3 +17,5 @@ void clearBit(Bitmap* BitMap, int i);
 int getBytes(int bits);
 int BitMap_bit(const Bitmap* BitMap, int bit_num);
 void BitMap_print(Bitmap* BitMap);
+int testbit(Bitmap* bitmap, int index);
+int bitmap_test();
