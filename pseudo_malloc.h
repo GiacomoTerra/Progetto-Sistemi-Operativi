@@ -1,5 +1,5 @@
 #pragma once
-#include "buddy_allocator.c"
+#include "buddy_allocator.h"
 
 #define PAGE_SIZE 4096
 

@@ -1,7 +1,9 @@
 #pragma once
 #include <stdint.h>
 
-#define BITMAP_SIZE_IN_BYTES 1024 * 1024 // 1 MB
+// #define BITMAP_SIZE_IN_BYTES 1024 * 1024 // 1 MB
+
+
 
 typedef struct {
 	uint8_t* buffer;

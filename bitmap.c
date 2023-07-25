@@ -13,7 +13,7 @@ void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer) {
 //distrugge una bitmap
 void destroyBitMap(Bitmap* BitMap) {
 	if (BitMap == NULL) return;
-	free(BitMap->buffer);
+	// free(BitMap->buffer);
 	free(BitMap);
 }
 
@@ -83,25 +83,6 @@ int testbit(Bitmap* bitmap, int index) {
 	uint8_t byte = bitmap->buffer[byte_index];
 	return (byte >> bit_offset) & 0x1;
 }
-int bitmap_test() {
-	int num_bits = BITMAP_SIZE_IN_BYTES * 8;
-	uint8_t* buffer = (uint8_t*)malloc(BITMAP_SIZE_IN_BYTES);
-	if (buffer == NULL) {
-		printf("Failed to allocate memory for the bitmap buffer\n");
-		return 1;
-	}
-	Bitmap* bitmap;
-	createBitMap(bitmap, num_bits, buffer);
-	setBit(bitmap, 500, 0);
-	int bitValue = getBit(bitmap, 500);
-	printf("Bit value at index 500: %d\n", bitValue);
-	BitMap_print(bitmap);	
-	destroyBitMap(bitmap);
-	return 0;
-}
-
-	
-	
 	
 	
 	
