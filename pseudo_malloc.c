@@ -6,11 +6,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-void* pseudo_malloc(BuddyAllocator* alloc, int size) {
+char memory[MEMORY_SIZE];
+uint8_t bitmap_buffer[((1 << (BUDDY_LEVELS)) -1)];
+BuddyAllocator allocator;
+
+void pseudo_init() {
+	init_buddy(&allocator, bitmap_buffer, BUDDY_LEVELS, memory, MIN_BUCKET_SIZE);
+}
+
+void* pseudo_malloc(int size) {
 	if (size <= 0) {
 		printf("Grandezza nulla, inserisci una grandezza valida\n");
 		return NULL;
 	}
+	size+=4;
 	if (size > PAGE_SIZE / 4) {
 		//Richiesta superiore a 1/4 della page_size, utilizza mmap
 		void* mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -24,25 +33,18 @@ void* pseudo_malloc(BuddyAllocator* alloc, int size) {
 		return mem;
 	} else {
 		//Richiesta inferiore a 1/4 della page size
-		return BuddyAllocator_malloc(alloc, size);
+		return BuddyAllocator_malloc(&allocator, size);
 	}
 }
 
-void pseudo_free(BuddyAllocator* alloc, void* mem) {
-	if (mem == NULL) {
+void pseudo_free(void* mem, int size) {
+	if (mem == NULL || size <= 0) {
 		printf("Memoria nulla, impossibile deallocare\n");
 		return;
 	}
-	int min_bucket_size = alloc->min_bucket_size;
-	int index = ((char*)mem - alloc->memory) / min_bucket_size;
-	//Verifica che l'indice sia valido
-	if (index < 0 || index >= (1 << alloc->num_levels)) {
-		printf("Indice non valido, impossibile deallocare\n");
-		return;
-	}
-	if (min_bucket_size > PAGE_SIZE / 4) {
+	if (size > PAGE_SIZE / 4) {
 		//Dimensione superiore a 1/4 della page size, utilizza munmap
-		int result = munmap(mem, min_bucket_size);
+		int result = munmap(mem, size);
 		if (result == -1) {
 			printf("Errore durante la deallocazione della memoria con munmap\n");
 			return;
@@ -51,7 +53,7 @@ void pseudo_free(BuddyAllocator* alloc, void* mem) {
 		printf("\tIndirizzo: %p\n", mem);
 	} else {
 		//Dimensione inferiore a 1/4 della page size
-		BuddyAllocator_free(alloc, mem);
+		BuddyAllocator_free(&allocator, mem);
 	}
 }
 

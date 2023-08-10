@@ -12,7 +12,7 @@ int getBytes(int num_bits) {
 void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer) {
 	BitMap->buffer = buffer;
 	BitMap->num_bits = num_bits;
-	BitMap->buffer_size = getBytes(num_bits);
+	BitMap->buffer_size = (num_bits + 7) / 8;
 }
 
 //distrugge una bitmap
@@ -28,8 +28,8 @@ void setBit(Bitmap* bitmap, int index, int state) {
 		printf("Indice del bit fuori dal range della bitmap\n");
 		return;
 	}
-	int byte_num = index >> 3;
-	int bit_in_byte = byte_num&0x03;
+	int byte_num = index / 8;
+	int bit_in_byte = index % 8;
 	if (state) {
 		bitmap->buffer[byte_num] |= (1<<bit_in_byte);
 	} else {
@@ -42,7 +42,7 @@ int getBit(Bitmap* BitMap, int i) {
 	if (BitMap == NULL || BitMap->num_bits <= i) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
-	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
+	return (BitMap->buffer[byte_index] & (1 << bit_offset));
 }
 
 //inspeziona lo stato del bit in posizione i

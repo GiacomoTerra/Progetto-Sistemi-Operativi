@@ -20,15 +20,27 @@ int buddyIdx(int idx)
 
 
 //  Funzione che dato il livello cerca il primo blocco libero
-int find_first_free_block(Bitmap* bitmap, int level) {
+int find_first_free_block(BuddyAllocator *allocator, int level) {
+	assert(level < allocator->num_levels);
 	int start_idx = (1 << level) - 1;
-	int end_idx = start_idx + (1 << level);
+	int end_idx = (1 << (level + 1)) -1;
 	for (int idx = start_idx; idx < end_idx; idx++) {
-		if (testbit(bitmap, idx) == 1)
+		if (getBit(&allocator->bitmap, idx) == 1)
 			return idx;
 	}
 	// Nessun blocco libero
 	return -1;
+}
+
+// Funzione che ritorna il livello del più piccolo blocco che può contenere i bytes
+int get_level(BuddyAllocator *allocator, int size) {
+	int level = 0;
+	int block_size = allocator->min_bucket_size;
+	while (block_size < size) {
+		block_size *= 2;
+		level++;
+	}
+	return allocator->num_levels - level - 1;
 }
 
 // initializza il buddy allocator
@@ -54,13 +66,13 @@ int buddy_allocator_get_buddy(BuddyAllocator *allocator, int level)
 	int num_levels = allocator->num_levels - 1;
 	int min_bucket_size = allocator->min_bucket_size;
 	// Verifica che il livello richiesto sia valido
-	if (level < 0 || level >= num_levels)
+	if (level < 0 || level > num_levels + 1)
 	{
 		printf("Livello non valido \n");
 		return -1;
 	}
 	// Cerco il primo blocco libero nel livello
-	int idx = find_first_free_block(&allocator->bitmap, level);
+	int idx = find_first_free_block(allocator, level);
 	if (idx == -1) {
 		// Nessun blocco disponibile a questo livello cerco sopra
 		int upper_buddy = buddy_allocator_get_buddy(allocator, level -1);
@@ -69,8 +81,8 @@ int buddy_allocator_get_buddy(BuddyAllocator *allocator, int level)
 			return -1;
 		int left_child = (upper_buddy * 2) + 1;
 		int right_child = (upper_buddy * 2) + 2;
-		idx = left_child;
 		setBit(&allocator->bitmap, right_child, 1);
+		idx = left_child;
 	}
 	// Imposto il buddy selezionato come non disponibile
 	setBit(&allocator->bitmap, idx, 0);
@@ -104,7 +116,7 @@ void BuddyAllocator_releaseBuddy(BuddyAllocator *allocator, int idx)
 		// Calcola l'indice del blocco parent
 		int parent_idx = parentIdx(idx);
 		// Controllo se il buddy è libero
-		if (testbit(&allocator->bitmap, buddy_idx) == 0) 
+		if (getBit(&allocator->bitmap, buddy_idx) == 0) 
 			break;
 		// Imposto come libero il parent
 		setBit(&allocator->bitmap, parent_idx, 1);
@@ -132,7 +144,7 @@ void BuddyAllocator_releaseBuddy(BuddyAllocator *allocator, int idx)
 
 void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size)
 {
-	int num_levels = allocator->num_levels;
+	int num_levels = allocator->num_levels -1;
 	char *memory = allocator->memory;
 	int min_bucket_size = allocator->min_bucket_size;
 	int max_block_size = (1 << num_levels) * min_bucket_size;
@@ -145,12 +157,7 @@ void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size)
 		return NULL;
 	}
 	// Cerca il livello appropriato che può contenere la dimensione richiesta
-	int level = 0;
-	int block = min_bucket_size;
-	while (block < (size + 4)) {
-		block *= 2;
-		level++;
-	}
+	int level = get_level(allocator, size+4);
 	// Ottieni il blocco dal buddy allocator
 	int idx = buddy_allocator_get_buddy(allocator, level);
 	if (idx == -1) {
@@ -163,14 +170,13 @@ void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size)
 	int block_size = min_bucket_size * (1 << (num_levels - level - 1));
 	int offset = (idx - start) * min_bucket_size;
 	char *block_address = memory + offset;
-	int* address = (int*) block_address;
-	*address = idx;
+	*((int*)block_address) = idx;
 	// Restituisce il puntatore al blocco di memoria ottenuto dal buddy allocator
 	printf("Blocco allocato dal buddy allocator\n");
 	printf("\tLivello: %d\n", level);
 	printf("\tDimensione: %d bytes\n", block_size);
 	printf("\tIndirizzo: %p\n", block_address);
-	return address + 1;
+	return block_address + 4;
 }
 
 void BuddyAllocator_free(BuddyAllocator *allocator, void *mem)
@@ -181,8 +187,6 @@ void BuddyAllocator_free(BuddyAllocator *allocator, void *mem)
 		return;
 	}
 	int idx = *((int*)(mem -1));
-	int min_bucket_size = allocator->min_bucket_size;
-	int num_levels = allocator->num_levels;
 	// Verifica che l'indice sia valido
 	if (idx < 0 || idx >= allocator->bitmap.num_bits)
 	{
