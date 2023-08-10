@@ -3,6 +3,11 @@
 #include <assert.h>
 #include "bitmap.h"
 
+//ritorna il numero dei bytes per memorizzare tutti i bits
+int getBytes(int num_bits) {
+	return num_bits / 8 + (num_bits % 8) != 0; 
+}
+
 //inizializza una bitmap su un array esterno
 void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer) {
 	BitMap->buffer = buffer;
@@ -19,7 +24,10 @@ void destroyBitMap(Bitmap* BitMap) {
 
 //setta il bit in posizione i, stato 0/1
 void setBit(Bitmap* bitmap, int index, int state) {
-	if (bitmap == NULL || bitmap->num_bits <= index) return;
+	if (index < 0 || index >= bitmap->num_bits) {
+		printf("Indice del bit fuori dal range della bitmap\n");
+		return;
+	}
 	int byte_num = index >> 3;
 	int bit_in_byte = byte_num&0x03;
 	if (state) {
@@ -35,18 +43,6 @@ int getBit(Bitmap* BitMap, int i) {
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
 	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
-}
-
-void clearBit(Bitmap* BitMap, int i) {
-	if (BitMap == NULL || BitMap->num_bits <= i) return;
-	int byte_index = i / 8;
-	int bit_offset = i % 8;
-	BitMap->buffer[byte_index] &= ~(1U << bit_offset);
-}
-
-//ritorna il numero dei bytes per memorizzare tutti i bits
-int getBytes(int num_bits) {
-	return num_bits / 8 + (num_bits % 8) != 0; 
 }
 
 //inspeziona lo stato del bit in posizione i

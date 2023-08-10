@@ -7,15 +7,13 @@
 #include <fcntl.h>
 
 void* pseudo_malloc(BuddyAllocator* alloc, int size) {
+	if (size <= 0) {
+		printf("Grandezza nulla, inserisci una grandezza valida\n");
+		return NULL;
+	}
 	if (size > PAGE_SIZE / 4) {
 		//Richiesta superiore a 1/4 della page_size, utilizza mmap
-		int fd = open("/dev/zero", O_RDWR);
-		if (fd == -1) {
-			printf("Errore durante la creazione del file temporaneo\n");
-			return NULL;
-		}
-		void* mem = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
-		close(fd);
+		void* mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 		if (mem == MAP_FAILED) {
 			printf("Errore durante l'allocazione della memoria con mmap\n");
 			return NULL;

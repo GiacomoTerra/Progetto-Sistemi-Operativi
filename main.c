@@ -4,9 +4,9 @@
 #include "buddy_allocator.h"
 
 
-#define BUDDY_LEVELS 10
+#define BUDDY_LEVELS 5
 #define MEMORY_SIZE (1 << 20) 
-#define MIN_BUCKET_SIZE (MEMORY_SIZE>>(BUDDY_LEVELS-1))
+#define MIN_BUCKET_SIZE (MEMORY_SIZE >> (BUDDY_LEVELS-1))
 #define PAGE_SIZE 4096
 #define BITMAP_BUFFER_SIZE (1 << (BUDDY_LEVELS+1))
 #define BUDDY_THRESHOLD (PAGE_SIZE / 4)
