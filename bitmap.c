@@ -42,7 +42,7 @@ int getBit(Bitmap* BitMap, int i) {
 	if (BitMap == NULL || BitMap->num_bits <= i) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
-	return (BitMap->buffer[byte_index] & (1 << bit_offset));
+	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
 }
 
 //inspeziona lo stato del bit in posizione i

@@ -7,7 +7,7 @@
 #include <fcntl.h>
 
 char memory[MEMORY_SIZE];
-uint8_t bitmap_buffer[((1 << (BUDDY_LEVELS)) -1)];
+uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS + 1))];
 BuddyAllocator allocator;
 
 void pseudo_init() {
@@ -19,8 +19,7 @@ void* pseudo_malloc(int size) {
 		printf("Grandezza nulla, inserisci una grandezza valida\n");
 		return NULL;
 	}
-	size+=4;
-	if (size > PAGE_SIZE / 4) {
+	if (size >= PAGE_SIZE / 4) {
 		//Richiesta superiore a 1/4 della page_size, utilizza mmap
 		void* mem = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 		if (mem == MAP_FAILED) {
@@ -38,14 +37,14 @@ void* pseudo_malloc(int size) {
 }
 
 void pseudo_free(void* mem, int size) {
-	if (mem == NULL || size <= 0) {
+	if (mem <= 0 || size <= 0) {
 		printf("Memoria nulla, impossibile deallocare\n");
 		return;
 	}
-	if (size > PAGE_SIZE / 4) {
+	if (size >= PAGE_SIZE / 4) {
 		//Dimensione superiore a 1/4 della page size, utilizza munmap
-		int result = munmap(mem, size);
-		if (result == -1) {
+		int res = munmap(mem, size);
+		if (res == -1) {
 			printf("Errore durante la deallocazione della memoria con munmap\n");
 			return;
 		}
