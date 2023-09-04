@@ -12,6 +12,8 @@ typedef struct {
 int levelIdx(size_t idx);
 int startIdx(int idx);
 int parentIdx(int idx);
+int is_valid_index(int i, int max);
+void clearAllBits(Bitmap* bitmap);
 int get_buddy_index(int idx);
 int find_first_free_block(BuddyAllocator *allocator, int level);
 int get_level(BuddyAllocator *allocator, int size);

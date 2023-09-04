@@ -18,6 +18,6 @@ int getBit(Bitmap* BitMap, int i);
 void clearBit(Bitmap* BitMap, int i);
 int getBytes(int bits);
 int BitMap_bit(const Bitmap* BitMap, int bit_num);
-void BitMap_print(Bitmap* BitMap);
+void bitmap_print(Bitmap* bitmap); 
 int testbit(Bitmap* bitmap, int index);
 int bitmap_test();

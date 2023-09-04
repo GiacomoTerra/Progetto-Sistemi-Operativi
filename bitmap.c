@@ -5,7 +5,7 @@
 
 //ritorna il numero dei bytes per memorizzare tutti i bits
 int getBytes(int num_bits) {
-	return num_bits / 8 + (num_bits % 8) != 0; 
+	return (num_bits / 8) + (num_bits % 8 ? 1 : 0); 
 }
 
 //inizializza una bitmap su un array esterno
@@ -39,7 +39,7 @@ void setBit(Bitmap* bitmap, int index, int state) {
 
 //ritorna il bit in posizione i
 int getBit(Bitmap* BitMap, int i) {
-	if (BitMap == NULL || BitMap->num_bits <= i) return 0;
+	if (BitMap == NULL || i >= BitMap->num_bits ) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
 	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
@@ -54,19 +54,18 @@ int BitMap_bit(const Bitmap* BitMap, int bit_num) {
 }
 
 //stampa la bitmap a schermo
-void BitMap_print(Bitmap* BitMap) {
-	uint8_t byte;
-	int num_bytes = (BitMap->num_bits + 7) / 8;
-	for (int i = 0; i < num_bytes; i++) {
-		byte = BitMap->buffer[i];
-		for (int j = 0; j < 8 && (i *8 + j) < BitMap->num_bits; j++) {
-			if (byte & (1 << j)) {
-				printf("1");
-			} else {
-				printf("0");
-			}
+void bitmap_print(Bitmap* bitmap) {
+	if (!bitmap || !bitmap->buffer) {
+		printf("Bitmap non valida o non inizializzata\n");
+		return;
+	}
+	printf("Bitmap: ");
+	for (int i = 0; i < bitmap->num_bits; i++) {
+		// Aggiungere uno spazio ogni 8 bit
+		if (i % 8 == 0 && i != 0) {
+			printf(" ");
 		}
-		printf(" ");
+		printf("%d", getBit(bitmap, i));
 	}
 	printf("\n");
 }

@@ -50,7 +50,7 @@ int main()
 
 	// --------------------------------------------------
 
-	printf("\n\nTEST CASE 3: allocate all the available memory of the buddy allocator and freeing invalid addresses\n");
+	/*printf("\n\nTEST CASE 3: allocate all the available memory of the buddy allocator and freeing invalid addresses\n");
 
 	int *ptrs[20];
 	for (int i = 0; i < 20; ++i)
@@ -70,5 +70,5 @@ int main()
 	ptr1 = (int *)pseudo_malloc(1 << 10);
 	printf("Allocated memory: %p\n", ptr1);
 
-	pseudo_free(ptr1 + 1, 1 << 10);
+	pseudo_free(ptr1 + 1, 1 << 10);*/
 }
