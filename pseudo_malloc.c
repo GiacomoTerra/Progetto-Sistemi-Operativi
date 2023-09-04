@@ -7,7 +7,7 @@
 #include <fcntl.h>
 
 char memory[MEMORY_SIZE];
-uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS + 1))];
+uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS - 1))];
 BuddyAllocator allocator;
 
 void pseudo_init() {
@@ -37,7 +37,7 @@ void* pseudo_malloc(int size) {
 }
 
 void pseudo_free(void* mem, int size) {
-	if (mem <= 0 || size <= 0) {
+	if (mem == NULL || size <= 0) {
 		printf("Memoria nulla, impossibile deallocare\n");
 		return;
 	}
