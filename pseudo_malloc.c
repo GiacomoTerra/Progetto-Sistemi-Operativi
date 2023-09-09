@@ -7,7 +7,7 @@
 #include <fcntl.h>
 
 char memory[MEMORY_SIZE];
-uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS - 1))];
+uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS + 1))];
 BuddyAllocator allocator;
 
 void pseudo_init() {
@@ -49,6 +49,7 @@ void pseudo_free(void* mem, int size) {
 			return;
 		}
 		printf("Memoria deallocata con munmap:\n");
+		printf("\tDimensione: %d bytes\n", size);
 		printf("\tIndirizzo: %p\n", mem);
 	} else {
 		//Dimensione inferiore a 1/4 della page size

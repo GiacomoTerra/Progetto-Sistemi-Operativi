@@ -39,7 +39,7 @@ void setBit(Bitmap* bitmap, int index, int state) {
 
 //ritorna il bit in posizione i
 int getBit(Bitmap* BitMap, int i) {
-	if (BitMap == NULL || i >= BitMap->num_bits ) return 0;
+	if (BitMap == NULL || i >= BitMap->num_bits || i < 0) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
 	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
