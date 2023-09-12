@@ -4,6 +4,7 @@
 #include <math.h>
 #include <assert.h>
 #include <string.h>
+#include <stdbool.h>
 #include "buddy_allocator.h"
 
 int levelIdx(size_t idx) { return (int)(floor(log2(idx))); }
@@ -27,19 +28,21 @@ int get_buddy_index(int idx) {
 		return idx + 1;
 }
 
+// Funzione ausiliaria che azzera tutti i bit della bitmap
 void clearAllBits(Bitmap* bitmap) {
 	for (int i = 0; i < bitmap->buffer_size; i++) {
 		bitmap->buffer[i] = 0;
 	}
 }
 
-//  Funzione che dato il livello cerca il primo blocco libero
-int find_first_free_block(BuddyAllocator *allocator, int level) {
-	assert(level < allocator->num_levels);
+// Funzione che dato il livello cerca il primo blocco libero
+int find_first_free_block(const Bitmap *bitmap, int level) {
+	//assert(level < allocator->num_levels);
 	int start_idx = (1 << level) - 1;
 	int end_idx = (1 << (level + 1)) -1;
 	for (int idx = start_idx; idx < end_idx; idx++) {
-		if (getBit(&allocator->bitmap, idx) == 1) {
+		// Blocco libero trovato ritorno l'indice
+		if (getBit(bitmap, idx)) {
 			return idx;
 		}
 	}
@@ -49,31 +52,34 @@ int find_first_free_block(BuddyAllocator *allocator, int level) {
 
 // Funzione che ritorna il livello del più piccolo blocco che può contenere i bytes
 int get_level(BuddyAllocator *allocator, int size) {
-	if (size <= allocator->min_bucket_size) {
-		return allocator->num_levels - 1;
+	if (size <= 0) {
+		// Dimensione non valida
+		return -1;
 	}
-	int level = (int) log2(size);
-	int target_level = allocator->num_levels - level;
-	// Se la dimensione non è una potenza esatta di 2
-	// ci vorrà un livello in meno per adattarla
-	if (size != (1 << level)) {
-		target_level--;
+	// Se la size è già più piccola
+	//if (size <= allocator->min_bucket_size) {
+		//return allocator->num_levels - 1;
+	//}
+	int level = 0;
+	int block_size = allocator->min_bucket_size;
+	while (block_size < size) {
+		block_size *= 2;
+		level++;
 	}
-	// Assicurazioni che il livello target non sia mai inferiore a 0
-	return target_level < 0 ? 0 : target_level;
+	return allocator->num_levels - level - 1;
 }
 
 // Funzione che ritorna l'indirizzo di memoria del buddy
-void *get_memory(BuddyAllocator *allocator, int level, int idx) {
+BuddyBlockHeader* get_memory(BuddyAllocator *allocator, int level, int idx) {
 	// Verifica che il livello e l'indice siano validi
-	if (level < 0 || level > allocator->num_levels || idx < 0 || idx > (1 << level)) {
+	if (level < 0 || level >= allocator->num_levels || idx < 0 || idx >= (1 << (level + 1))) {
 		printf("Errore: livello o indice non validi\n");
 		return NULL;
 	}
 	// Calcola l'offset in memoria basato sull'indice del blocco
-	int offset = (idx - ((1 << level) - 1)) * (allocator->min_bucket_size << level);
-	// Ritorna l'indirizzo di memoria corrispondente
-	return allocator->memory + offset;
+	int offset = (idx - ((1 << level) - 1)) * (allocator->min_bucket_size * (1 << (allocator->num_levels - level - 1)));
+	// Ritorna l'indirizzo di memoria corrispondente come MemoryBlockMetadata
+	return (BuddyBlockHeader*)(allocator->memory + offset);
 }
 
 // Funzione che stampa a schermo l'indice del blocco
@@ -83,7 +89,7 @@ void print_metadata(void* mem) {
 		return;
 	}
 	// Ottieni i metadati spostandoti indietro dalla memoria fornita
-	MemoryBlockMetadata* metadata = ((MemoryBlockMetadata*)mem) - 1;
+	BuddyBlockHeader* metadata = ((BuddyBlockHeader*)mem - 1);
 	// Stampa i dettagli dei metadati
 	printf("Metadati del blocco di memoria:\n");
 	printf("Indice del buddy: %d\n", metadata->buddy_index);
@@ -113,7 +119,7 @@ void init_buddy(BuddyAllocator *allocator, uint8_t *buffer, int num_levels, char
 	// Inizializzo la bitmap con il buffer fornito e il numero totale di blocchi
 	createBitMap(&allocator->bitmap, num_bits, buffer);
 	// Imposto tutti i bit a 0 (libero)
-	memset(allocator->bitmap.buffer, 0, allocator->bitmap.buffer_size);
+	clearAllBits(&allocator->bitmap);
 	// All'inizio, l'intera memoria è un grande blocco libero 
 	setBit(&allocator->bitmap, 0, 1);
 	// Imposta tutti i blocchi come liberi
@@ -135,23 +141,29 @@ int buddy_allocator_get_buddy(BuddyAllocator *allocator, int level) {
 		printf("Livello non valido \n");
 		return -1;
 	}
-	// Cerco il primo blocco libero nel livello
-	int idx = find_first_free_block(allocator, level);
-	// Se abbiamo trovato un blocco libero nel livello specificato
-	if (idx != -1) {
-		// Segna il blocco come occupato
-		setBit(&allocator->bitmap, idx, 0);
-		// Ritorna l'indice del buddy
-		return idx;
-	} else {
-		// Se non abbiamo trovato un blocco libero, procediamo al livello superiore
-		for (int l = level - 1; l >= 0; l--) {
-			idx = find_first_free_block(allocator, l);
-			if (idx != -1) {
-				// Se abbiamo trovato un blocco libero ad un livello superiore
-				setBit(&allocator->bitmap, idx, 0);
-				// Ritorna l'indice del figlio sinistro
-				return idx;
+	while (level >= 0) {
+		// Cerco il primo blocco libero nel livello
+		int idx = find_first_free_block(&allocator->bitmap, level);
+		// Se abbiamo trovato un blocco libero nel livello specificato
+		if (idx != -1) {
+			// Segna il blocco come occupato
+			setBit(&allocator->bitmap, idx, 0);
+			// Ritorna l'indice del buddy
+			return idx;
+		}
+		// Nessun blocco disponibile a questo livello salgo sù di uno
+		level--;
+		if (level >= 0) {
+			int parent_idx = find_first_free_block(&allocator->bitmap, level);
+			if (parent_idx != -1) {
+				// Segno il parent come non disponibile
+				setBit(&allocator->bitmap, parent_idx, 0);
+				// Segno il figlio destro come disponibile
+				int left_idx = parent_idx * 2 + 1;
+				int right_idx = left_idx + 1;
+				setBit(&allocator->bitmap, right_idx, 1);
+				setBit(&allocator->bitmap, left_idx, 0);
+				return left_idx;
 			}
 		}
 	}
@@ -164,23 +176,26 @@ int buddy_allocator_get_buddy(BuddyAllocator *allocator, int level) {
 
 // Funzione che rilascia il buddy e lo unisce con il gemello
 void BuddyAllocator_releaseBuddy(BuddyAllocator *allocator, int idx) {
-	// Rilascia il blocco corrente
-	setBit(&allocator->bitmap, idx, 1);
 	// Se idx è 0, siamo alla radice
-	while (idx > 0) {
+	while (true) {
+		// Calcolo il blocco gemello
 		int buddy_idx = get_buddy_index(idx);
+		// Calcolo il blocco parent
+		int parent_idx = parentIdx(idx);
 		// Se il buddy non è libero, interrompi
-		if (!is_valid_index(buddy_idx, allocator->bitmap.num_bits) || getBit(&allocator->bitmap, buddy_idx) == 1) {
+		if (!getBit(&allocator->bitmap, buddy_idx)) {
+			// Segno il blocco come disponibile
+			setBit(&allocator->bitmap, idx, 1);
 			break;
 		}
-		// Altrimenti rilascio il blocco padre
-		int parent_idx = parentIdx(idx);
-		// Imposta come non assegnato il padre
-		setBit(&allocator->bitmap, parent_idx, 1);
-		setBit(&allocator->bitmap, idx, 1);
-		setBit(&allocator->bitmap, buddy_idx, 1);
-		// Passa al livello superiore per continuare la verifica
-		idx = parent_idx;
+		else {
+			// Se il buddy è libero unisco i 2 blocchi
+			setBit(&allocator->bitmap, idx, 0);
+			setBit(&allocator->bitmap, buddy_idx, 0);
+			setBit(&allocator->bitmap, parent_idx, 1);
+			// Imposto l'indice a quello del padre e continuo con il livello superiore
+			idx = parent_idx;
+		}
 	}
 }
 
@@ -189,11 +204,13 @@ void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size) {
 		printf("Errore: allocazione non riuscita. Allocator non valido o dimensione non valida\n");
 		return NULL; 
 	}
+	int total_size = size + sizeof(BuddyBlockHeader);
 	printf("Richiesta di allocazione di %d bytes\n", size);
 	// Determina il livello corretto per la dimensione richiesta
-	int level = get_level(allocator, size);
+	int level = get_level(allocator, total_size);
 	printf("Livello ottimale per l'allocazione: %d\n", level);
 	// Cerca un blocco libero al livello appropriato
+	//int idx = buddy_allocator_get_buddy(allocator, level);
 	int idx = -1;
 	for (int l = level; l >= 0; l--) {
 		idx = buddy_allocator_get_buddy(allocator, l);
@@ -211,7 +228,7 @@ void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size) {
 		return NULL;
 	}
 	// Ottieni un puntatore alla memoria allocata
-	MemoryBlockMetadata* metadata = get_memory(allocator, level, idx);
+	BuddyBlockHeader* metadata = (BuddyBlockHeader*)get_memory(allocator, level, idx);
 	if (metadata == NULL) {
 		printf("Errore nella get memory\n");
 		return NULL;
@@ -220,11 +237,12 @@ void *BuddyAllocator_malloc(BuddyAllocator *allocator, int size) {
 	metadata->buddy_index = idx;
 	// Stampo la bitmap
 	bitmap_print(&allocator->bitmap);
+	// Calcolo l'indirizzo di memoria da ritornare all'utente
 	void* user_memory = (void*)(metadata + 1);
 	// Stampa i metadati appena dopo averli assegnati
 	print_metadata(user_memory);
 	// Restituisco l'indirizzo appena dopo i metadati al chiamante
-	return user_memory;
+	return metadata + 1;
 }
 
 void BuddyAllocator_free(BuddyAllocator *allocator, void *mem) {
@@ -235,9 +253,9 @@ void BuddyAllocator_free(BuddyAllocator *allocator, void *mem) {
 	// Stampa i metadati prima di liberare la memoria
 	print_metadata(mem);
 	// Ottieni i metadati spostandoti indietro dalla memoria fornita
-	MemoryBlockMetadata* metadata = ((MemoryBlockMetadata*)mem) - 1;
+	BuddyBlockHeader *header = ((BuddyBlockHeader*)mem - 1);
 	// Recupera l'indice del buddy dai metadati
-	int idx = metadata->buddy_index;
+	int idx = header->buddy_index;
 	// Calcola il livello dell'indice
 	int level = get_level_from_index(idx);
 	printf("Liberando il blocco con indice %d al livello %d\n", idx, level);

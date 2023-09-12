@@ -14,7 +14,7 @@ typedef struct {
 void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer);
 void destroyBitMap(Bitmap* BitMap);
 void setBit(Bitmap* BitMap, int i, int stato);
-int getBit(Bitmap* BitMap, int i);
+int getBit(const Bitmap* BitMap, int i);
 void clearBit(Bitmap* BitMap, int i);
 int getBytes(int bits);
 int BitMap_bit(const Bitmap* BitMap, int bit_num);

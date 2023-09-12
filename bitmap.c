@@ -12,7 +12,8 @@ int getBytes(int num_bits) {
 void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer) {
 	BitMap->buffer = buffer;
 	BitMap->num_bits = num_bits;
-	BitMap->buffer_size = (num_bits + 7) / 8;
+	BitMap->buffer_size = getBytes(num_bits);
+	//BitMap->buffer_size = (num_bits + 7) / 8;
 }
 
 //distrugge una bitmap
@@ -38,7 +39,7 @@ void setBit(Bitmap* bitmap, int index, int state) {
 }
 
 //ritorna il bit in posizione i
-int getBit(Bitmap* BitMap, int i) {
+int getBit(const Bitmap* BitMap, int i) {
 	if (BitMap == NULL || i >= BitMap->num_bits || i < 0) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
