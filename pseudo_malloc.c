@@ -7,7 +7,7 @@
 #include <fcntl.h>
 
 char memory[MEMORY_SIZE];
-uint8_t bitmap_buffer[(1 << (BUDDY_LEVELS + 1))];
+uint8_t bitmap_buffer[BITMAP_BUFFER_SIZE];
 BuddyAllocator allocator;
 
 void pseudo_init() {
