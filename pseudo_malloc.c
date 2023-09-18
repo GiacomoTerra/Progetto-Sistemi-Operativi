@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -57,3 +58,26 @@ void pseudo_free(void* mem, int size) {
 	}
 }
 
+void* pseudo_realloc(void* mem, int old_size, int new_size) {
+	// Se la new size è 0 liberiamo la memoria e restituiamo NULL
+	if (new_size == 0) {
+		pseudo_free(mem, old_size);
+		return NULL;
+	} else if (!mem) {
+		// Se mem è NULL allochiamo un nuovo blocco di memoria
+		return pseudo_malloc(new_size);
+	} else if (new_size <= old_size) {
+		// Se la nuova dimensione è minore o uguale alla vecchia dimensione 
+		// semplicemente restituisci il puntatore senza fare nulla
+		return mem;
+	} else {
+		void* new_mem = pseudo_malloc(new_size);
+		if (new_mem) {
+			// Copia i dati del vecchio blocco di memoria al nuovo
+			memcpy(new_mem, mem, old_size);
+			pseudo_free(mem, old_size);
+		}
+		return new_mem;
+	}
+}
+		

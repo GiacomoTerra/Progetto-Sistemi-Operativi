@@ -1,7 +1,7 @@
 #include "pseudo_malloc.h"
 #include <assert.h>
+#include <string.h>
 #include <stdio.h>
-#define NUM_BLOCKS 1000
 
 int main()
 {
@@ -11,7 +11,7 @@ int main()
 	
 	
 	// Allocare una piccola quantità di memoria
-	void* small_mem = pseudo_malloc(5);
+	/*void* small_mem = pseudo_malloc(5);
 	assert(small_mem != NULL);
 	pseudo_free(small_mem, 5);
 	printf("\n\n");
@@ -67,13 +67,37 @@ int main()
 	// Tentativo di allocare la somma totale 
 	void* ptr7 = pseudo_malloc(175);
 	assert(ptr7 != NULL);
-	pseudo_free(ptr7, 175);
+	pseudo_free(ptr7, 175);*/
 	
-	/*void* ptrs[20];
-	for (int i = 0; i < 20; ++i) {
-		ptrs[i] = (void*)pseudo_malloc(4);
+	printf("Test 1: Allocazione e Deallocazione con pseudo_malloc e pseudo_free\n");
+	
+	int* arr = (int*) pseudo_malloc(10 * sizeof(int));
+	for (int i = 0; i < 10; i++) {
+		arr[i] = i;
 	}
-	for (int i = 0; i < 20; ++i) {
-		pseudo_free(ptrs[i], 4);
-	}*/
+	for (int i = 0; i < 10; i++) {
+		printf("%d ", arr[i]);
+	}
+	printf("\n");
+	pseudo_free(arr, 10 * sizeof(int));
+	
+	printf("Test 2: Realloc con riduzione della dimensione\n");
+	
+	char* string = (char*) pseudo_malloc(20);
+	strcpy(string, "Hello World!");
+	printf("Prima: %s\n", string);
+	string = (char*) pseudo_realloc(string, 20, 10);
+	printf("Dopo: %s\n", string);
+	pseudo_free(string, 10);
+	
+	printf("Test 3: Realloc con aumento della dimensione\n");
+	
+	char* string2 = (char*) pseudo_malloc(10);
+	strcpy(string2, "Hello");
+	printf("Prima; %s\n", string2);
+	string2 = (char*) pseudo_realloc(string2, 10, 20);
+	strcat(string2, ", World!");
+	printf("Dopo: %s\n", string2);
+	pseudo_free(string2, 20);
+	
 }
