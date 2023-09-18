@@ -105,6 +105,7 @@ int find_and_divide(BuddyAllocator* allocator, int level) {
 	return -1;		
 }
 
+
 // Funzione che ritorna l'indirizzo di memoria del buddy
 BuddyBlockHeader* get_memory(BuddyAllocator *allocator, int level, int idx) {
 	if (!allocator || !allocator->memory) {
@@ -289,3 +290,48 @@ void BuddyAllocator_free(BuddyAllocator *allocator, void *mem) {
 	// Stampa la bitmap
 	bitmap_print(&allocator->bitmap);
 }
+
+void* BuddyAllocator_realloc(BuddyAllocator* allocator, void* mem, int size) {
+	if (!allocator || !mem) {
+		printf("Errore: Allocator o indirizzo di memoria non validi\n");
+		return;
+	}
+	// Stampa i metadati prima di liberare la memoria
+	print_metadata(mem);
+	// Ottieni i metadati spostandoti indietro dalla memoria fornita
+	BuddyBlockHeader *header = ((BuddyBlockHeader*)mem - 1);
+	// Recupera l'indice del buddy dai metadati
+	int idx = header->buddy_index;
+	// Rilascio il blocco di memoria
+	BuddyAllocator_releaseBuddy(allocator, idx);
+	// Aggiungo alla size richiesta i byte per salvare l'indice nella struct
+	int total_size = size + sizeof(BuddyBlockHeader);
+	printf("Richiesta di riallocazione di %d bytes\n", size);
+	// Determina il livello corretto per la dimensione richiesta
+	int level = get_level(allocator, total_size);
+	printf("Livello ottimale per la riallocazione: %d\n", level);
+	// Cerca un blocco libero al livello appropriato
+	int index = buddy_allocator_get_buddy(allocator, level);
+	// Se non viene trovato un blocco libero, ritorna NULL
+	if (index == -1) {
+		printf("Errore: riallocazione non riuscita, Nessun blocco disponibile\n");
+		return NULL;
+	}
+	// Ottieni un puntatore alla memoria allocata
+	BuddyBlockHeader* header = (BuddyBlockHeader*)get_memory(allocator, level, index);
+	if (header == NULL) {
+		printf("Errore nella get memory\n");
+		return NULL;
+	}
+	// Salva l'indice del buddy nei metadati
+	header->buddy_index = index;
+	// Stampo la bitmap
+	bitmap_print(&allocator->bitmap);
+	// Calcolo l'indirizzo di memoria da ritornare all'utente
+	void* user_memory = (void*)(header + 1);
+	// Stampa i metadati appena dopo averli assegnati
+	print_metadata(user_memory);
+	// Restituisco l'indirizzo appena dopo i metadati al chiamante
+	return user_memory;
+	
+	
