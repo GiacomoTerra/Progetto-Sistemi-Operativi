@@ -69,6 +69,8 @@ int main()
 	assert(ptr7 != NULL);
 	pseudo_free(ptr7, 175);*/
 	
+	
+	//----------- TEST REALLOC -----------
 	printf("Test 1: Allocazione e Deallocazione con pseudo_malloc e pseudo_free\n");
 	
 	int* arr = (int*) pseudo_malloc(10 * sizeof(int));
@@ -99,5 +101,26 @@ int main()
 	strcat(string2, ", World!");
 	printf("Dopo: %s\n", string2);
 	pseudo_free(string2, 20);
+	
+	//------------- TEST PER VALGRIND ----------
+	
+	// Test di base
+	/*void* ptr = pseudo_malloc(50);
+	pseudo_free(ptr, 50);
+	// Allocazione di un grande blocco di memoria (mmap)
+	void* big_ptr = pseudo_malloc(PAGE_SIZE);
+	pseudo_free(big_ptr, PAGE_SIZE);
+	// Test di riduzione dimensione
+	void* smaller_ptr = pseudo_malloc(100);
+	smaller_ptr = pseudo_realloc(smaller_ptr, 100, 50);
+	pseudo_free(smaller_ptr, 50);
+	// Test di aumento dimensione
+	void* larger_ptr = pseudo_malloc(50);
+	larger_ptr = pseudo_realloc(larger_ptr, 50, 100);
+	pseudo_free(larger_ptr, 100);
+	void* combined_ptr = pseudo_malloc(100);
+	combined_ptr = pseudo_realloc(combined_ptr, 100, 50);
+	combined_ptr = pseudo_realloc(combined_ptr, 100, 150);
+	pseudo_free(combined_ptr, 150);*/
 	
 }
