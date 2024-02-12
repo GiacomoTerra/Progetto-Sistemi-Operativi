@@ -83,7 +83,7 @@ int main()
 	printf("\n");
 	pseudo_free(arr, 10 * sizeof(int));
 	
-	printf("Test 2: Realloc con riduzione della dimensione\n");
+	printf("\nTest 2: Realloc con riduzione della dimensione\n");
 	
 	char* string = (char*) pseudo_malloc(20);
 	strcpy(string, "Hello World!");
@@ -102,6 +102,28 @@ int main()
 	printf("Dopo: %s\n", string2);
 	pseudo_free(string2, 20);
 	
+	void* ptr1 = pseudo_malloc(128);
+	assert(ptr1 != NULL);
+	pseudo_free(ptr1, 128);
+
+	void* ptr2 = pseudo_malloc(128);
+	assert(ptr2 != NULL);
+	// Verifica che ptr1 e ptr2 possano coincidere, indicando una riutilizzazione efficace della memoria
+	pseudo_free(ptr2, 128);
+	
+	void* small = pseudo_malloc(16);
+	assert(small != NULL);
+	pseudo_free(small, 16);
+
+	void* medium = pseudo_malloc(256);
+	assert(medium != NULL);
+	pseudo_free(medium, 256);
+
+	void* large = pseudo_malloc(4096);
+	assert(large != NULL);
+	pseudo_free(large, 4096);
+	
+
 	//------------- TEST PER VALGRIND ----------
 	
 	// Test di base

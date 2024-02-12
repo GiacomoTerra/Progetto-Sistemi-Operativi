@@ -5,35 +5,39 @@
 
 //ritorna il numero dei bytes per memorizzare tutti i bits
 int getBytes(int num_bits) {
+	// Restituisce la somma dei bytes che possono contenere i bits più il resto in caso ci sia bisogno
 	return (num_bits / 8) + (num_bits % 8 ? 1 : 0); 
 }
 
-//inizializza una bitmap su un array esterno
+//inizializza una bitmap con un numero specificato di bit su un array esterno
 void createBitMap(Bitmap* BitMap, int num_bits, uint8_t* buffer) {
 	BitMap->buffer = buffer;
 	BitMap->num_bits = num_bits;
 	BitMap->buffer_size = getBytes(num_bits);
-	//BitMap->buffer_size = (num_bits + 7) / 8;
 }
 
-//distrugge una bitmap
+//distrugge una bitmap, liberando le risorse allocate
 void destroyBitMap(Bitmap* BitMap) {
 	if (BitMap == NULL) return;
-	// free(BitMap->buffer);
 	free(BitMap);
 }
 
-//setta il bit in posizione i, stato 0/1
+//Imposta un valore per il bit in posizione i, stato 0/1
 void setBit(Bitmap* bitmap, int index, int state) {
 	if (index < 0 || index >= bitmap->num_bits) {
 		printf("Indice del bit fuori dal range della bitmap\n");
 		return;
 	}
+	// Determina in quale byte si trova il bit, ogni byte contiene 8 bit
 	int byte_num = index / 8;
+	// Il resto indica la posizione del bit all'interno del byte
 	int bit_in_byte = index % 8;
 	if (state) {
+		// Per impostare il bit a 1, si usa un'operazione OR bit a bit tra il byte corrente e un bitmask dove solo il bit di interesse è impostato a 1
 		bitmap->buffer[byte_num] |= (1<<bit_in_byte);
 	} else {
+		// Per resettare il bit a 0, si usa un'operazione AND bit a bit (&=) con il complemento (~) di un bitmask simile al caso precedente
+		// Il bitmask, ottenuto spostando a sinistra il valore 1 di bit_in_byte posizioni, viene complementato per avere 1 in tutte le posizioni tranne quella del bit di interesse
 		bitmap->buffer[byte_num] &= ~(1<<bit_in_byte);
 	}
 }
@@ -43,15 +47,8 @@ int getBit(const Bitmap* BitMap, int i) {
 	if (BitMap == NULL || i >= BitMap->num_bits || i < 0) return 0;
 	int byte_index = i / 8;
 	int bit_offset = i % 8;
+	// sposta a destra il byte contenente il bit di bit_offset portando il bit nella posizione meno significativa e a questo punto si fa un AND con 1
 	return (BitMap->buffer[byte_index] >> bit_offset) & 1;
-}
-
-//inspeziona lo stato del bit in posizione i
-int BitMap_bit(const Bitmap* BitMap, int bit_num) {
-	int byte_num = bit_num >> 3;
-	assert(byte_num < BitMap->buffer_size);
-	int bit_in_byte = byte_num&0x03;
-	return (BitMap->buffer[byte_num] & (1 << bit_in_byte)) != 0;
 }
 
 //stampa la bitmap a schermo
@@ -71,14 +68,7 @@ void bitmap_print(Bitmap* bitmap) {
 	printf("\n");
 }
 
-// verifica lo stato di un bit specifico all'interno di una bitmap
-// restituisce il valore del bit corrispondente all'indice nella bitmap
-int testbit(Bitmap* bitmap, int index) {
-	int byte_index = index / 8;
-	int bit_offset = index % 8;
-	uint8_t byte = bitmap->buffer[byte_index];
-	return (byte >> bit_offset) & 0x1;
-}
+
 	
 	
 	

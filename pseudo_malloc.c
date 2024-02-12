@@ -11,10 +11,12 @@ char memory[MEMORY_SIZE];
 uint8_t bitmap_buffer[BITMAP_BUFFER_SIZE];
 BuddyAllocator allocator;
 
+// Inizializza il sistema di allocazione della memoria 
 void pseudo_init() {
 	init_buddy(&allocator, bitmap_buffer, BUDDY_LEVELS, memory, MIN_BUCKET_SIZE);
 }
 
+// Alloca un blocco di memoria di dimensione specificata equivalente di malloc dalla libreria standard
 void* pseudo_malloc(int size) {
 	if (size <= 0) {
 		printf("Grandezza nulla, inserisci una grandezza valida\n");
